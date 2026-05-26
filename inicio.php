@@ -547,21 +547,125 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .tag-cat { background: var(--accent-light); color: var(--accent); }
         .tag-nom { background: var(--success-bg); color: var(--success); }
 
-        /* ── Responsive ── */
+        /* ========== ESTILOS DE IMPRESIÓN ========== */
+        @media print {
+            /* Ocultar toda la interfaz de pantalla */
+            .page-header, .section-nav, .formato-section .actions-bar, .plazas-section, 
+            .formato-section form .actions-bar, .btn, .btn-print, .btn-primary, .btn-secondary,
+            .section-nav, .alert, .plazas-toolbar {
+                display: none !important;
+            }
+            
+            /* Ocultar el contenido del formulario en pantalla al imprimir */
+            .formato-section form {
+                display: none !important;
+            }
+            
+            /* Mostrar solo el documento de impresión */
+            .print-document-only {
+                display: block !important;
+                margin: 0;
+                padding: 0.5cm;
+            }
+            
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+            
+            .main-wrap {
+                padding: 0;
+                max-width: 100%;
+            }
+        }
+
+        /* Documento que SOLO se ve al imprimir */
+        .print-document-only {
+            display: none;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 11pt;
+            line-height: 1.3;
+        }
+        
+        .print-document-only .oficial-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 10pt;
+        }
+        
+        .print-document-only .oficial-table th,
+        .print-document-only .oficial-table td {
+            border: 1px solid black;
+            padding: 6px 8px;
+            vertical-align: top;
+        }
+        
+        .print-document-only .oficial-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .print-document-only .logo-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .print-document-only .logo-placeholder {
+            width: 80px;
+            height: 80px;
+            border: 1px dashed #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 9px;
+        }
+        
+        .print-document-only .firma-line {
+            border-top: 1px solid black;
+            margin-top: 30px;
+            padding-top: 5px;
+            text-align: center;
+        }
+        
+        .print-document-only .checklist-item-print {
+            margin: 6px 0;
+        }
+        
+        .print-document-only .radio-print {
+            display: inline-block;
+            margin: 0 8px;
+        }
+        
+        .print-document-only .auth-section {
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid black;
+        }
+        
+        .print-document-only .header-titulo {
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        @media print {
+            .print-document-only .no-print-border {
+                border: none;
+            }
+        }
+
+        /* Responsive */
         @media (max-width: 700px) {
             .col-2, .col-3, .col-4, .col-2-1, .col-1-2, .col-3-1, .col-rfc { grid-template-columns: 1fr; }
             .firma-grid { grid-template-columns: 1fr; }
             .auth-options { grid-template-columns: 1fr; }
             .checklist-item { grid-template-columns: 1fr; }
             .header-meta { display: none; }
-        }
-
-        @media print {
-            .section-nav, .actions-bar, .plazas-toolbar { display: none !important; }
-            .main-wrap { padding: 0; }
-            .formato-doc { box-shadow: none; border: 1px solid #ccc; }
-            .plazas-section { display: none !important; }
-            .formato-section { display: block !important; }
         }
     </style>
 </head>
@@ -754,11 +858,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="field-row col-2-1">
                 <div class="field">
                     <label>Puesto o Contrato</label>
-                    <input type="text" name="puesto_nuevo" value="<?= htmlspecialchars($_POST['puesto_nuevo'] ?? '') ?>">
+                    <input type="text" name="puesto_nuevo" id="puesto_nuevo" value="<?= htmlspecialchars($_POST['puesto_nuevo'] ?? '') ?>">
                 </div>
                 <div class="field">
                     <label>Código Presupuestal</label>
-                    <input type="text" name="codigo_presupuestal2" value="<?= htmlspecialchars($_POST['codigo_presupuestal2'] ?? '') ?>" style="font-family:var(--font-mono);">
+                    <input type="text" name="codigo_presupuestal2" id="codigo_presupuestal2" value="<?= htmlspecialchars($_POST['codigo_presupuestal2'] ?? '') ?>" style="font-family:var(--font-mono);">
                 </div>
             </div>
 
@@ -799,14 +903,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="field">
                     <label>Remuneración Actual ($)</label>
-                    <input type="number" name="remuneracion2" step="0.01" value="<?= htmlspecialchars($_POST['remuneracion2'] ?? '') ?>" style="font-family:var(--font-mono);">
+                    <input type="number" name="remuneracion2" id="remuneracion2" step="0.01" value="<?= htmlspecialchars($_POST['remuneracion2'] ?? '') ?>" style="font-family:var(--font-mono);">
                 </div>
             </div>
 
             <div class="field-row col-1">
                 <div class="field">
                     <label>Ubicación del centro de trabajo, horario y tiempo de traslado</label>
-                    <textarea name="ubicacion2"><?= htmlspecialchars($_POST['ubicacion2'] ?? '') ?></textarea>
+                    <textarea name="ubicacion2" id="ubicacion2"><?= htmlspecialchars($_POST['ubicacion2'] ?? '') ?></textarea>
                 </div>
             </div>
 
@@ -1160,6 +1264,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 </div><!-- end main-wrap -->
 
+<!-- ========== DOCUMENTO PARA IMPRESIÓN (SOLO SE VE AL IMPRIMIR) ========== -->
+<div class="print-document-only">
+    <!-- Logo area con espacio para logos institucionales -->
+    <div class="logo-area">
+        <div class="logo-placeholder">[ LOGO<br>INSTITUCIÓN 1 ]</div>
+        <div style="text-align: center;">
+            <h3>SECRETARÍA DE EDUCACIÓN PÚBLICA</h3>
+            <h2>TECNOLÓGICO NACIONAL DE MÉXICO</h2>
+            <p>Dirección de Personal · Formato de Compatibilidad</p>
+        </div>
+        <div class="logo-placeholder">[ LOGO<br>INSTITUCIÓN 2 ]</div>
+    </div>
+
+    <div class="header-titulo">
+        <h4>SOLICITUD DE COMPATIBILIDAD</h4>
+        <p><strong>Atentamente solicito se autorice la Compatibilidad para desempeñar los siguientes puestos, cargos, comisiones o la prestación de servicios profesionales por honorarios, informando que el puesto que ocupo actualmente es:</strong></p>
+    </div>
+
+    <!-- Institución 1 -->
+    <h4>Institución 1 que certifica los datos del puesto actual</h4>
+    <table class="oficial-table" id="print_tabla_inst1">
+        <thead>
+            <tr><th>Puesto o Contrato</th><th>Código presupuestal</th><th>Unidad de Adscripción</th><th>Fecha de Alta</th><th>Tipo Nombramiento</th><th>Remuneración</th><th>Ubicación, horario y tiempo de traslado</th></tr>
+        </thead>
+        <tbody>
+            <tr><td id="print_puesto_inst1">PROFESOR DE ASIGNATURA C (E.S.)</td><td id="print_codigo_inst1">E3525</td><td id="print_unidad_inst1">INSTITUTO TECNOLÓGICO DE ENSENADA</td><td id="print_fecha_inst1">01/10/2021</td><td id="print_tipo_inst1">DEFINITIVO</td><td id="print_rem_inst1">$3,751.50</td><td id="print_ubicacion_inst1">BLVD TECNOLÓGICO #150, EX EJIDO CHAPULTEPEC, ENSENADA, BAJA CALIFORNIA. LUNES 9:00-10:00, 11:00-14:00, MARTES 11:00-13:00 HRS.</td></tr>
+        </tbody>
+    </table>
+
+    <!-- Institución 2 -->
+    <h4>Institución 2 que valida los datos del puesto o contrato a desempeñar</h4>
+    <table class="oficial-table">
+        <thead><tr><th>Puesto o Contrato</th><th>Código presupuestal</th><th>Unidad de Adscripción</th><th>Remuneración</th><th>Ubicación, horario y tiempo de traslado</th></thead>
+        <tbody>
+            <tr><td id="print_puesto_inst2">PROFESOR DE ASIGNATURA A (E.S.)</td><td id="print_codigo_inst2">E3519</td><td id="print_unidad_inst2">INSTITUTO TECNOLÓGICO DE ENSENADA</td><td id="print_rem_inst2">$2,430.50</td><td id="print_ubicacion_inst2">BLVD TECNOLÓGICO #150, MARTES 9:00-10:00, 13:00-14:00, MIÉRCOLES 9:00-11:00 HRS.</td></tr>
+        </tbody>
+    </table>
+
+    <div style="margin: 20px 0; text-align: right;" id="print_lugar_fecha">
+        ENSENADA, BAJA CALIFORNIA a 16 de FEBRERO de 2026
+    </div>
+
+    <!-- LISTA CHECABLE -->
+    <h4>LISTA CHECABLE</h4>
+    
+    <div class="checklist-print">
+        <strong>I. SE HACE CONSTAR QUE:</strong><br>
+        ✓ Se cuenta con la descripción y perfil del puesto que el solicitante ocupa actualmente.<br>
+        ✓ Se cuenta con la descripción y perfil del puesto que se pretende ocupar.<br><br>
+
+        <strong>II. LAS FUNCIONES A DESARROLLAR EN LOS PUESTOS:</strong><br>
+        a) ¿Son excluyentes entre sí? <span class="radio-print">☐ Sí</span> <span class="radio-print">☒ No</span><br>
+        b) ¿Implican o pudieran originar conflicto de intereses? <span class="radio-print">☐ Sí</span> <span class="radio-print">☒ No</span><br><br>
+
+        <strong>III. ¿Existe la posibilidad de desempeñar los puestos ADECUADAMENTE EN RAZÓN DE:</strong><br>
+        a) El horario y jornada de trabajo que a cada puesto corresponde: <span class="radio-print">☒ Sí</span> <span class="radio-print">☐ No</span><br>
+        b) Las particularidades, características, exigencias y condiciones de los puestos: <span class="radio-print">☒ Sí</span> <span class="radio-print">☐ No</span><br>
+        c) La ubicación de los centros de trabajo y del domicilio del servidor público: <span class="radio-print">☒ Sí</span> <span class="radio-print">☐ No</span><br>
+        d) ¿El servidor público manifestó expresamente no contar con licencia? <span class="radio-print">☒ Sí</span> <span class="radio-print">☐ No</span><br>
+        e) ¿Existe prohibición legal o contractual para emitir la compatibilidad? <span class="radio-print">☐ Sí</span> <span class="radio-print">☒ No</span><br>
+        f) Las remuneraciones rebasan el límite del art. 127 de la Constitución: <span class="radio-print">☐ Sí</span> <span class="radio-print">☒ No</span><br>
+        g) ¿La remuneración es mayor a la establecida para el Presidente? <span class="radio-print">☐ Sí</span> <span class="radio-print">☒ No</span><br>
+        h) ¿La remuneración es igual o mayor que su superior jerárquico? <span class="radio-print">☐ Sí</span> <span class="radio-print">☒ No</span><br>
+        i) ¿Se trata de un trabajo técnico calificado o de alta especialización? <span class="radio-print">☒ Sí</span> <span class="radio-print">☐ No</span><br>
+        j) Horas en actividades docentes frente a grupo: 9 horas semanales aprobadas.<br><br>
+    </div>
+
+    <!-- Firmas -->
+    <div style="margin: 30px 0;">
+        <table style="width:100%; border:none">
+            <tr>
+                <td style="text-align:center; width:50%">
+                    <div class="firma-line" id="print_firma_cert">LIC. JAVIER MUÑOZ DUEÑAS<br><small>DIRECTOR DE PERSONAL</small></div>
+                </td>
+                <td style="text-align:center">
+                    <div class="firma-line" id="print_firma_director">VALENTÍN ARQUÍMEDES SÁNCHEZ BELTRÁN<br><small>DIRECTOR DEL PLANTEL</small></div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Resolución -->
+    <div class="auth-section" id="print_resolucion_a">
+        a) De conformidad con lo dispuesto en los artículos 136 y 137 del Reglamento de la Ley Federal de Presupuesto y Responsabilidad Hacendaria, se otorga la presente AUTORIZACIÓN de Compatibilidad.
+    </div>
+    <div class="auth-section" id="print_resolucion_b" style="display:none">
+        b) NO SE OTORGA LA AUTORIZACIÓN de Compatibilidad, debido a que no existe la regulación establecida.
+    </div>
+
+    <p style="font-size:9pt; margin-top:20px;"><strong>NOTA:</strong> Este documento deberá contar con el sello de ambas instituciones.</p>
+    <p style="font-size:9pt;" id="print_analista_fecha">Fecha de análisis: 16 de FEBRERO de 2026 &nbsp;&nbsp; Analista: CHRISTIAN G. HERNÁNDEZ H.</p>
+</div>
+
 <script>
 // ── Tabs ──
 function showTab(name, el) {
@@ -1204,12 +1401,18 @@ function updateCount() {
     document.getElementById('plazas-count').textContent = rows.length + ' plazas encontradas';
 }
 
-// ── Usar plaza en solicitud ──
+// ── Usar plaza en solicitud (actualiza campos y también los datos de impresión) ──
 function usarPlaza(puesto, cat, clave, rem) {
     document.querySelector('input[name="puesto_nuevo"]').value = puesto;
     document.querySelector('input[name="codigo_presupuestal2"]').value = cat;
     document.querySelector('input[name="clave_larga1"]').value = clave;
     document.querySelector('input[name="remuneracion2"]').value = rem;
+    
+    // Actualizar datos de impresión
+    document.getElementById('print_puesto_inst2').innerText = puesto;
+    document.getElementById('print_codigo_inst2').innerText = cat;
+    document.getElementById('print_rem_inst2').innerText = '$' + parseFloat(rem).toLocaleString('en-US');
+    
     showTab('formato', document.querySelector('.nav-tab'));
     document.querySelector('.nav-tab').classList.add('active');
     setTimeout(() => {
@@ -1222,10 +1425,92 @@ function usarPlaza(puesto, cat, clave, rem) {
     }, 200);
 }
 
+// Actualizar documento de impresión con los datos del formulario antes de imprimir
+function actualizarDatosImpresion() {
+    // Institución 1
+    let puesto1 = document.querySelector('input[name="puesto_actual"]')?.value || 'PROFESOR DE ASIGNATURA C (E.S.)';
+    let codigo1 = document.querySelector('input[name="codigo_presupuestal1"]')?.value || 'E3525';
+    let unidad1 = document.querySelector('input[name="unidad_adscripcion1"]')?.value || 'INSTITUTO TECNOLÓGICO DE ENSENADA';
+    let fecha1 = '';
+    let dia1 = document.querySelector('input[name="alta_dia1"]')?.value || '01';
+    let mes1 = document.querySelector('select[name="alta_mes1"]')?.value || 'Octubre';
+    let ano1 = document.querySelector('input[name="alta_ano1"]')?.value || '2021';
+    fecha1 = dia1 + '/' + mes1 + '/' + ano1;
+    let tipo1 = document.querySelector('select[name="tipo_nombramiento1"]')?.value === '10' ? 'DEFINITIVO' : 'INTERINO';
+    let rem1 = document.querySelector('input[name="remuneracion1"]')?.value || '3751.50';
+    let ubicacion1 = document.querySelector('textarea[name="ubicacion1"]')?.value || 'BLVD TECNOLÓGICO #150, EX EJIDO CHAPULTEPEC, ENSENADA, BAJA CALIFORNIA.';
+    
+    document.getElementById('print_puesto_inst1').innerText = puesto1;
+    document.getElementById('print_codigo_inst1').innerText = codigo1;
+    document.getElementById('print_unidad_inst1').innerText = unidad1;
+    document.getElementById('print_fecha_inst1').innerText = fecha1;
+    document.getElementById('print_tipo_inst1').innerText = tipo1;
+    document.getElementById('print_rem_inst1').innerText = '$' + parseFloat(rem1).toLocaleString('en-US');
+    document.getElementById('print_ubicacion_inst1').innerText = ubicacion1;
+    
+    // Institución 2
+    let puesto2 = document.querySelector('input[name="puesto_nuevo"]')?.value || 'PROFESOR DE ASIGNATURA A (E.S.)';
+    let codigo2 = document.querySelector('input[name="codigo_presupuestal2"]')?.value || 'E3519';
+    let unidad2 = document.querySelector('input[name="unidad_adscripcion2"]')?.value || 'INSTITUTO TECNOLÓGICO DE ENSENADA';
+    let rem2 = document.querySelector('input[name="remuneracion2"]')?.value || '2430.50';
+    let ubicacion2 = document.querySelector('textarea[name="ubicacion2"]')?.value || 'BLVD TECNOLÓGICO #150, MARTES 9:00-10:00, 13:00-14:00, MIÉRCOLES 9:00-11:00 HRS.';
+    
+    document.getElementById('print_puesto_inst2').innerText = puesto2;
+    document.getElementById('print_codigo_inst2').innerText = codigo2;
+    document.getElementById('print_unidad_inst2').innerText = unidad2;
+    document.getElementById('print_rem_inst2').innerText = '$' + parseFloat(rem2).toLocaleString('en-US');
+    document.getElementById('print_ubicacion_inst2').innerText = ubicacion2;
+    
+    // Lugar y fecha
+    let lugar = document.querySelector('input[name="lugar"]')?.value || 'ENSENADA, BAJA CALIFORNIA';
+    let dia = document.querySelector('input[name="fecha_dia"]')?.value || '16';
+    let mes = document.querySelector('select[name="fecha_mes"]')?.value || 'FEBRERO';
+    let ano = document.querySelector('input[name="fecha_ano"]')?.value || '2026';
+    document.getElementById('print_lugar_fecha').innerHTML = lugar + ' a ' + dia + ' de ' + mes + ' de ' + ano;
+    
+    // Firmas
+    let firmaCert = document.querySelector('input[name="firma_cert_nombre"]')?.value || 'LIC. JAVIER MUÑOZ DUEÑAS';
+    let firmaDirector = document.querySelector('input[name="director_plantel"]')?.value || 'VALENTÍN ARQUÍMEDES SÁNCHEZ BELTRÁN';
+    document.getElementById('print_firma_cert').innerHTML = firmaCert + '<br><small>DIRECTOR DE PERSONAL</small>';
+    document.getElementById('print_firma_director').innerHTML = firmaDirector + '<br><small>DIRECTOR DEL PLANTEL</small>';
+    
+    // Analista
+    let analista = document.querySelector('input[name="nombre_analista"]')?.value || 'CHRISTIAN G. HERNÁNDEZ H.';
+    let fechaAnalisis = document.querySelector('input[name="fecha_analisis"]')?.value || '2026-02-16';
+    if(fechaAnalisis) {
+        let partes = fechaAnalisis.split('-');
+        if(partes.length === 3) fechaAnalisis = partes[2] + ' de ' + (meses[partes[1]] || partes[1]) + ' de ' + partes[0];
+    }
+    document.getElementById('print_analista_fecha').innerHTML = 'Fecha de análisis: ' + fechaAnalisis + ' &nbsp;&nbsp; Analista: ' + analista;
+    
+    // Resolución
+    let resolucion = document.querySelector('input[name="resolucion"]:checked')?.value;
+    if(resolucion === 'A') {
+        document.getElementById('print_resolucion_a').style.display = 'block';
+        document.getElementById('print_resolucion_b').style.display = 'none';
+    } else {
+        document.getElementById('print_resolucion_a').style.display = 'none';
+        document.getElementById('print_resolucion_b').style.display = 'block';
+    }
+}
+
+// Al imprimir
+window.onbeforeprint = function() {
+    actualizarDatosImpresion();
+};
+
 // Inicializar al cargar
 window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('tab-plazas').style.display = 'none';
+    actualizarDatosImpresion();
 });
+
+// Meses para formato
+const meses = {
+    '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril',
+    '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',
+    '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
+};
 </script>
 </body>
 </html>
