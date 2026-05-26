@@ -2,21 +2,104 @@
 // Configuración de la aplicación
 $page_title = "Formato de Compatibilidad - TecNM";
 
+// Incluir conexión a la base de datos
+require_once 'conexion.php';
+
 // Datos de ejemplo (en producción vendrían de BD)
 $datos_rfc = "RORV740111AX7";
 $institucion1 = "TECNOLOGICO NACIONAL DE MEXICO";
 $institucion2 = "CETMAR NO. 11";
 
+// Obtener lista de plazas desde la base de datos
+$plazas = [];
+$sql_plazas = "SELECT Clave_Presupuestal, CD_Trabajo, Categoria, Des_Categoria, Salario FROM plazas ORDER BY Categoria, Des_Categoria";
+$result_plazas = $conn->query($sql_plazas);
+if ($result_plazas && $result_plazas->num_rows > 0) {
+    while ($row = $result_plazas->fetch_assoc()) {
+        $plazas[] = $row;
+    }
+}
+
+// Obtener lista de trabajadores para sugerencias
+$trabajadores = [];
+$sql_trabajadores = "SELECT ID_Trabajador, apPaterno, apMaterno, nombre, RFC FROM trabajadores";
+$result_trabajadores = $conn->query($sql_trabajadores);
+if ($result_trabajadores && $result_trabajadores->num_rows > 0) {
+    while ($row = $result_trabajadores->fetch_assoc()) {
+        $trabajadores[] = $row;
+    }
+}
+
 // Procesamiento del formulario
 $submitted = false;
 $errors = [];
+$mensaje_exito = "";
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validaciones básicas
-    if (empty($_POST['rfc'])) $errors[] = "RFC es requerido.";
     if (empty($_POST['apellido_paterno'])) $errors[] = "Apellido paterno es requerido.";
     if (empty($_POST['nombre'])) $errors[] = "Nombre es requerido.";
+    if (empty($_POST['rfc'])) $errors[] = "RFC es requerido.";
     if (empty($_POST['puesto_actual'])) $errors[] = "El puesto actual es requerido.";
-    if (empty($errors)) $submitted = true;
+    
+    if (empty($errors)) {
+        // Verificar si el trabajador ya existe por RFC
+        $rfc = strtoupper(trim($_POST['rfc']));
+        $sql_check = "SELECT ID_Trabajador FROM trabajadores WHERE RFC = ?";
+        $stmt_check = $conn->prepare($sql_check);
+        $stmt_check->bind_param("s", $rfc);
+        $stmt_check->execute();
+        $result_check = $stmt_check->get_result();
+        
+        if ($result_check->num_rows > 0) {
+            // Trabajador existe, obtener su ID
+            $row = $result_check->fetch_assoc();
+            $id_trabajador = $row['ID_Trabajador'];
+        } else {
+            // Insertar nuevo trabajador
+            $sql_insert_trabajador = "INSERT INTO trabajadores (apPaterno, apMaterno, nombre, RFC) VALUES (?, ?, ?, ?)";
+            $stmt_insert = $conn->prepare($sql_insert_trabajador);
+            $ap_paterno = strtoupper(trim($_POST['apellido_paterno']));
+            $ap_materno = strtoupper(trim($_POST['apellido_materno'] ?? ''));
+            $nombre = strtoupper(trim($_POST['nombre']));
+            $stmt_insert->bind_param("ssss", $ap_paterno, $ap_materno, $nombre, $rfc);
+            
+            if ($stmt_insert->execute()) {
+                $id_trabajador = $conn->insert_id;
+            } else {
+                $errors[] = "Error al guardar los datos del trabajador: " . $conn->error;
+            }
+            $stmt_insert->close();
+        }
+        $stmt_check->close();
+        
+        // Si no hay errores, guardar la compatibilidad
+        if (empty($errors)) {
+            $tipo_movimiento = ($_POST['resolucion'] ?? 'A') == 'A' ? 1 : 0;
+            $temporalidad_inc = $_POST['auth_desde'] ?? date('Y-m-d');
+            $temporalidad_fin = $_POST['auth_hasta'] ?? date('Y-m-d', strtotime('+1 year'));
+            $plaza_activa = $_POST['codigo_presupuestal2'] ?? '';
+            $ciudad = $_POST['lugar'] ?? 'ENSENADA';
+            $fecha_creacion = date('Y-m-d');
+            $ubicacion = $_POST['ubicacion2'] ?? '';
+            $horario = $_POST['horario'] ?? '';
+            $tiempo_traslado = $_POST['tiempo_traslado'] ?? '';
+            $clave_presupuestal = $_POST['codigo_presupuestal2'] ?? '';
+            
+            $sql_compatibilidad = "INSERT INTO compatibilidad (Tipo_de_Movimiento, Temporalidad_INC, Temporalidad_FIN, Plaza_Activa, Ciudad, Fecha_de_Creacion, Ubicacion, Horario, Tiempo_de_Traslado, ID_Trabajador, Clave_Presupuestal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            
+            $stmt_comp = $conn->prepare($sql_compatibilidad);
+            $stmt_comp->bind_param("issssssssis", $tipo_movimiento, $temporalidad_inc, $temporalidad_fin, $plaza_activa, $ciudad, $fecha_creacion, $ubicacion, $horario, $tiempo_traslado, $id_trabajador, $clave_presupuestal);
+            
+            if ($stmt_comp->execute()) {
+                $submitted = true;
+                $mensaje_exito = "Solicitud de compatibilidad registrada exitosamente con ID: " . $conn->insert_id;
+            } else {
+                $errors[] = "Error al guardar la compatibilidad: " . $conn->error;
+            }
+            $stmt_comp->close();
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -549,31 +632,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         /* ========== ESTILOS DE IMPRESIÓN ========== */
         @media print {
-            /* Ocultar toda la interfaz de pantalla */
             .page-header, .section-nav, .formato-section .actions-bar, .plazas-section, 
             .formato-section form .actions-bar, .btn, .btn-print, .btn-primary, .btn-secondary,
             .section-nav, .alert, .plazas-toolbar {
                 display: none !important;
             }
-            
-            /* Ocultar el contenido del formulario en pantalla al imprimir */
             .formato-section form {
                 display: none !important;
             }
-            
-            /* Mostrar solo el documento de impresión */
             .print-document-only {
                 display: block !important;
                 margin: 0;
                 padding: 0.5cm;
             }
-            
             body {
                 background: white;
                 padding: 0;
                 margin: 0;
             }
-            
             .main-wrap {
                 padding: 0;
                 max-width: 100%;
@@ -647,17 +723,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding: 10px;
             border: 1px solid black;
         }
-        
-        .print-document-only .header-titulo {
-            text-align: center;
-            margin: 15px 0;
-        }
-        
-        @media print {
-            .print-document-only .no-print-border {
-                border: none;
-            }
-        }
 
         /* Responsive */
         @media (max-width: 700px) {
@@ -710,7 +775,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php if ($submitted): ?>
 <div class="alert alert-success">
     <span>✓</span>
-    <div><strong>Solicitud registrada correctamente.</strong> El formato ha sido guardado para revisión institucional.</div>
+    <div><strong><?= htmlspecialchars($mensaje_exito) ?></strong></div>
 </div>
 <?php endif; ?>
 
@@ -1003,11 +1068,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="field-row col-2">
                     <div class="field">
                         <label>Válida a partir del (Día/Mes/Año)</label>
-                        <input type="date" name="auth_desde" value="<?= htmlspecialchars($_POST['auth_desde'] ?? '2021-01-01') ?>">
+                        <input type="date" name="auth_desde" value="<?= htmlspecialchars($_POST['auth_desde'] ?? date('Y-m-d')) ?>">
                     </div>
                     <div class="field">
                         <label>Hasta (Día/Mes/Año)</label>
-                        <input type="date" name="auth_hasta" value="<?= htmlspecialchars($_POST['auth_hasta'] ?? '2021-06-30') ?>">
+                        <input type="date" name="auth_hasta" value="<?= htmlspecialchars($_POST['auth_hasta'] ?? date('Y-m-d', strtotime('+1 year'))) ?>">
                     </div>
                 </div>
             </div>
@@ -1192,63 +1257,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <tr>
                     <th>CT</th>
                     <th>Categoría</th>
-                    <th>Hrs</th>
-                    <th>Clave Diagonal</th>
-                    <th>Puesto</th>
-                    <th class="num">S07</th>
-                    <th class="num">ET</th>
-                    <th class="num">M39</th>
-                    <th class="num">CA</th>
-                    <th class="num">C34</th>
-                    <th class="num">Suma</th>
-                    <th class="num">Remuneración</th>
+                    <th>Descripción</th>
+                    <th>CD Trabajo</th>
+                    <th>Salario</th>
                     <th>Acción</th>
                 </tr>
             </thead>
             <tbody id="plazas-tbody">
-                <?php
-                // Datos de plazas representativos
-                $plazas = [
-                    ['02DIT0023K','E3507','5.0','1403E350705.0000001','TÉCNICO DOCENTE DE ASIGNATURA B (E.S.)',373.4,1.65,15.75,3.4,0,394.20,1971.00],
-                    ['02DIT0023K','E3507','10.0','1403E350710.0000008','TÉCNICO DOCENTE DE ASIGNATURA B (E.S.)',373.4,1.65,15.75,3.4,0,394.20,3942.00],
-                    ['02DIT0023K','E3509','6.0','1456E350906.0000004','TÉCNICO DOCENTE DE ASIGNATURA C (E.S.)',420.15,1.8,16.9,3.4,25,467.25,2803.50],
-                    ['02DIT0023K','E3509','12.0','1403E350912.0145000','TÉCNICO DOCENTE DE ASIGNATURA C (E.S.)',420.15,1.8,16.9,3.4,25,467.25,5607.00],
-                    ['02DIT0023K','E3519','5.0','1403E351905.0100022','PROFESOR DE ASIGNATURA A (E.S.)',460.45,2,17.75,3.4,2.5,486.10,2430.50],
-                    ['02DIT0023K','E3519','3.0','1403E351903.0100123','PROFESOR DE ASIGNATURA A (E.S.)',460.45,2,17.75,3.4,2.5,486.10,1458.30],
-                    ['02DIT0023K','E3519','16.0','1456E351916.0730006','PROFESOR DE ASIGNATURA A (E.S.)',460.45,2,17.75,3.4,2.5,486.10,7777.60],
-                    ['02DIT0023K','E3521','6.0','1403E352106.0100068','PROFESOR DE ASIGNATURA B (E.S.)',521.75,2.4,19.1,3.4,2.5,549.15,3294.90],
-                    ['02DIT0023K','E3521','4.0','1403E352104.0100224','PROFESOR DE ASIGNATURA B (E.S.)',521.75,2.4,19.1,3.4,2.5,549.15,2196.60],
-                    ['02DIT0023K','E3521','8.0','1403E352108.0145045','PROFESOR DE ASIGNATURA B (E.S.)',521.75,2.4,19.1,3.4,2.5,549.15,4393.20],
-                    ['02DIT0023K','E3525','6.0','1403E352506.0100029','PROFESOR DE ASIGNATURA C (E.S.)',593.35,2.9,23.1,3.4,2.5,625.25,3751.50],
-                    ['02DIT0023K','E3525','4.0','1403E352504.0100030','PROFESOR DE ASIGNATURA C (E.S.)',593.35,2.9,23.1,3.4,2.5,625.25,2501.00],
-                    ['02DIT0023K','E3525','12.0','1403E352512.0100012','PROFESOR DE ASIGNATURA C (E.S.)',593.35,2.9,23.1,3.4,2.5,625.25,7503.00],
-                    ['02DIT0023K','E3525','16.0','1403E352516.0100004','PROFESOR DE ASIGNATURA C (E.S.)',593.35,2.9,23.1,3.4,2.5,625.25,10004.00],
-                    ['02DIT0023K','E3525','19.0','1403E352519.0100041','PROFESOR DE ASIGNATURA C (E.S.)',593.35,2.9,23.1,3.4,2.5,625.25,11879.75],
-                    ['02DIT0023K','E3525','5.0','1403E352505.0100016','PROFESOR DE ASIGNATURA C (E.S.)',593.35,2.9,23.1,3.4,2.5,625.25,3126.25],
-                    ['02DIT0023K','E3525','9.0','1403E352509.0100008','PROFESOR DE ASIGNATURA C (E.S.)',593.35,2.9,23.1,3.4,2.5,625.25,5627.25],
-                    ['02DIT0023K','E3525','3.0','1403E352503.0100009','PROFESOR DE ASIGNATURA C (E.S.)',593.35,2.9,23.1,3.4,2.5,625.25,1875.75],
-                ];
-                foreach($plazas as $i => $p):
-                    $cat = $p[1];
-                    $remuneracion = number_format($p[11], 2);
-                    $suma = number_format($p[10], 2);
-                ?>
-                <tr data-cat="<?=$cat?>" data-search="<?=strtolower($p[1].' '.$p[3].' '.$p[4])?>">
-                    <td><span style="font-family:var(--font-mono); font-size:11px;"><?=htmlspecialchars($p[0])?></span></td>
-                    <td><span class="tag tag-cat"><?=htmlspecialchars($cat)?></span></td>
-                    <td style="text-align:center; font-family:var(--font-mono);"><?=htmlspecialchars($p[2])?></td>
-                    <td><span style="font-family:var(--font-mono); font-size:11px;"><?=htmlspecialchars($p[3])?></span></td>
-                    <td><?=htmlspecialchars($p[4])?></td>
-                    <td class="num"><?=number_format($p[5],2)?></td>
-                    <td class="num"><?=number_format($p[6],2)?></td>
-                    <td class="num"><?=number_format($p[7],2)?></td>
-                    <td class="num"><?=number_format($p[8],2)?></td>
-                    <td class="num"><?=number_format($p[9],2)?></td>
-                    <td class="num" style="font-weight:600;"><?=$suma?></td>
-                    <td class="num" style="font-weight:700; color:var(--success);">$<?=$remuneracion?></td>
+                <?php foreach($plazas as $plaza): ?>
+                <tr data-cat="<?= htmlspecialchars($plaza['Categoria']) ?>" data-search="<?= strtolower($plaza['Categoria'] . ' ' . $plaza['Des_Categoria']) ?>">
+                    <td><span style="font-family:var(--font-mono);"><?= htmlspecialchars($plaza['Clave_Presupuestal']) ?></span></td>
+                    <td><span class="tag tag-cat"><?= htmlspecialchars($plaza['Categoria']) ?></span></td>
+                    <td><?= htmlspecialchars($plaza['Des_Categoria']) ?></td>
+                    <td><?= htmlspecialchars($plaza['CD_Trabajo']) ?></td>
+                    <td class="num" style="font-weight:700; color:var(--success);">$<?= number_format($plaza['Salario'], 2) ?></td>
                     <td>
                         <button type="button" style="padding:4px 10px; font-size:11px; background:var(--accent); color:white; border:none; border-radius:2px; cursor:pointer;"
-                            onclick="usarPlaza('<?=htmlspecialchars($p[4],ENT_QUOTES)?>', '<?=htmlspecialchars($cat,ENT_QUOTES)?>', '<?=htmlspecialchars($p[3],ENT_QUOTES)?>', <?=$p[11]?>)">
+                            onclick="usarPlaza('<?= htmlspecialchars($plaza['Des_Categoria'], ENT_QUOTES) ?>', '<?= htmlspecialchars($plaza['Categoria'], ENT_QUOTES) ?>', '<?= htmlspecialchars($plaza['Clave_Presupuestal'], ENT_QUOTES) ?>', <?= $plaza['Salario'] ?>)">
                             Usar →
                         </button>
                     </td>
@@ -1258,7 +1283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </table>
     </div>
     <div style="margin-top:8px; font-size:11px; color:var(--text-muted);">
-        Dirección: KM. 15 CARRET. TRANSPENINSULAR, AP 1125, COL. EX-EJIDO CHAPULTEPEC, C.P. 22780, ENSENADA, B.C.
+        Total de plazas registradas: <?= count($plazas) ?>
     </div>
 </div><!-- end tab-plazas -->
 
@@ -1405,7 +1430,7 @@ function updateCount() {
 function usarPlaza(puesto, cat, clave, rem) {
     document.querySelector('input[name="puesto_nuevo"]').value = puesto;
     document.querySelector('input[name="codigo_presupuestal2"]').value = cat;
-    document.querySelector('input[name="clave_larga1"]').value = clave;
+    document.querySelector('input[name="clave_presupuestal1"]').value = clave;
     document.querySelector('input[name="remuneracion2"]').value = rem;
     
     // Actualizar datos de impresión
@@ -1431,12 +1456,13 @@ function actualizarDatosImpresion() {
     let puesto1 = document.querySelector('input[name="puesto_actual"]')?.value || 'PROFESOR DE ASIGNATURA C (E.S.)';
     let codigo1 = document.querySelector('input[name="codigo_presupuestal1"]')?.value || 'E3525';
     let unidad1 = document.querySelector('input[name="unidad_adscripcion1"]')?.value || 'INSTITUTO TECNOLÓGICO DE ENSENADA';
-    let fecha1 = '';
     let dia1 = document.querySelector('input[name="alta_dia1"]')?.value || '01';
-    let mes1 = document.querySelector('select[name="alta_mes1"]')?.value || 'Octubre';
+    let mes1Select = document.querySelector('select[name="alta_mes1"]');
+    let mes1Texto = mes1Select?.options[mes1Select.selectedIndex]?.text || 'Octubre';
     let ano1 = document.querySelector('input[name="alta_ano1"]')?.value || '2021';
-    fecha1 = dia1 + '/' + mes1 + '/' + ano1;
-    let tipo1 = document.querySelector('select[name="tipo_nombramiento1"]')?.value === '10' ? 'DEFINITIVO' : 'INTERINO';
+    let fecha1 = dia1 + '/' + mes1Texto + '/' + ano1;
+    let tipo1Select = document.querySelector('select[name="tipo_nombramiento1"]');
+    let tipo1 = tipo1Select?.options[tipo1Select.selectedIndex]?.text || 'DEFINITIVO';
     let rem1 = document.querySelector('input[name="remuneracion1"]')?.value || '3751.50';
     let ubicacion1 = document.querySelector('textarea[name="ubicacion1"]')?.value || 'BLVD TECNOLÓGICO #150, EX EJIDO CHAPULTEPEC, ENSENADA, BAJA CALIFORNIA.';
     
@@ -1477,10 +1503,6 @@ function actualizarDatosImpresion() {
     // Analista
     let analista = document.querySelector('input[name="nombre_analista"]')?.value || 'CHRISTIAN G. HERNÁNDEZ H.';
     let fechaAnalisis = document.querySelector('input[name="fecha_analisis"]')?.value || '2026-02-16';
-    if(fechaAnalisis) {
-        let partes = fechaAnalisis.split('-');
-        if(partes.length === 3) fechaAnalisis = partes[2] + ' de ' + (meses[partes[1]] || partes[1]) + ' de ' + partes[0];
-    }
     document.getElementById('print_analista_fecha').innerHTML = 'Fecha de análisis: ' + fechaAnalisis + ' &nbsp;&nbsp; Analista: ' + analista;
     
     // Resolución
@@ -1503,10 +1525,10 @@ window.onbeforeprint = function() {
 window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('tab-plazas').style.display = 'none';
     actualizarDatosImpresion();
+    updateCount();
 });
 
-// Meses para formato
-const meses = {
+const mesesObj = {
     '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril',
     '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',
     '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
