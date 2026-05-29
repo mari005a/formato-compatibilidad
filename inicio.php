@@ -7,8 +7,8 @@ require_once 'conexion.php';
 
 // Datos de ejemplo (en producción vendrían de BD)
 $datos_rfc = "RORV740111AX7";
-$institucion1 = "TECNOLOGICO NACIONAL DE MEXICO";
-$institucion2 = "CETMAR NO. 11";
+$institucion1 = "TECNOLÓGICO NACIONAL DE MÉXICO";
+$institucion2 = "";
 $meses = ['01'=>'Enero','02'=>'Febrero','03'=>'Marzo','04'=>'Abril','05'=>'Mayo','06'=>'Junio','07'=>'Julio','08'=>'Agosto','09'=>'Septiembre','10'=>'Octubre','11'=>'Noviembre','12'=>'Diciembre'];
 // Obtener lista de plazas desde la base de datos
 $plazas = [];
@@ -855,7 +855,10 @@ $stmt_comp->close();
 <!-- ══ HEADER ══ -->
 <header class="page-header">
     <div class="header-inner">
-        <div class="header-seal">TecNM<br>SEP</div>
+        <!-- Logo TecNM / SEP -->
+        <div class="header-logo">
+            <img src="imagenes/tecnmlogo.png" alt="TecNM" style="height: 60px; width: auto;">
+        </div>
         <div class="header-titles">
             <h1>Tecnológico Nacional de México</h1>
             <div class="sub">Departamento de Recursos Humanos — Compatibilidad de Empleos</div>
@@ -1106,7 +1109,7 @@ $stmt_comp->close();
                 <input type="number" name="alta_ano2" min="1990" max="2099" value="<?= htmlspecialchars($_POST['alta_ano2'] ?? '') ?>" style="font-family:var(--font-mono);">
             </div>
             <div class="field">
-                <label>Remuneración Actual ($)</label>
+                <label>Remuneración ($)</label>
                 <input type="number" name="remuneracion2" id="remuneracion2" step="0.01" value="<?= htmlspecialchars($_POST['remuneracion2'] ?? '') ?>" style="font-family:var(--font-mono);">
             </div>
         </div>
@@ -1451,15 +1454,19 @@ $stmt_comp->close();
 
 <!-- ========== DOCUMENTO PARA IMPRESIÓN (SOLO SE VE AL IMPRIMIR) ========== -->
 <div class="print-document-only">
-    <!-- Logo area con espacio para logos institucionales -->
+    <!-- Logo area con logos reales para impresión -->
     <div class="logo-area">
-        <div class="logo-placeholder">[ LOGO<br>INSTITUCIÓN 1 ]</div>
+        <div class="logo-print">
+            <img src="imagenes/logotec.png" alt="TecNM" style="max-width: 100px; max-height: 80px;">
+        </div>
         <div style="text-align: center;">
             <h3>SECRETARÍA DE EDUCACIÓN PÚBLICA</h3>
             <h2>TECNOLÓGICO NACIONAL DE MÉXICO</h2>
             <p>Dirección de Personal · Formato de Compatibilidad</p>
         </div>
-        <div class="logo-placeholder">[ LOGO<br>INSTITUCIÓN 2 ]</div>
+        <div class="logo-print">
+            <img src="imagenes/seplogo.jpg" alt="CETMAR" style="max-width: 100px; max-height: 80px;">
+        </div>
     </div>
 
     <div class="header-titulo">
