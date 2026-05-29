@@ -8,7 +8,7 @@ require_once 'conexion.php';
 // Datos de ejemplo (en producción vendrían de BD)
 $datos_rfc = "RORV740111AX7";
 $institucion1 = "TECNOLÓGICO NACIONAL DE MÉXICO";
-$institucion2 = "";
+$institucion2 = "CETMAR NO. 11";
 $meses = ['01'=>'Enero','02'=>'Febrero','03'=>'Marzo','04'=>'Abril','05'=>'Mayo','06'=>'Junio','07'=>'Julio','08'=>'Agosto','09'=>'Septiembre','10'=>'Octubre','11'=>'Noviembre','12'=>'Diciembre'];
 // Obtener lista de plazas desde la base de datos
 $plazas = [];
@@ -140,9 +140,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($stmt->execute()) {
         $submitted = true;
-        $mensaje_exito = "✅ Solicitud registrada exitosamente con ID: " . $conn->insert_id;
+        $mensaje_exito = "Solicitud registrada exitosamente con ID: " . $conn->insert_id;
     } else {
-        $errors[] = "❌ Error al guardar: " . $stmt->error;
+        $errors[] = "Error al guardar: " . $stmt->error;
     }
     
     $stmt->close();
