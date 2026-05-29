@@ -9,7 +9,7 @@ require_once 'conexion.php';
 $datos_rfc = "RORV740111AX7";
 $institucion1 = "TECNOLOGICO NACIONAL DE MEXICO";
 $institucion2 = "CETMAR NO. 11";
-
+$meses = ['01'=>'Enero','02'=>'Febrero','03'=>'Marzo','04'=>'Abril','05'=>'Mayo','06'=>'Junio','07'=>'Julio','08'=>'Agosto','09'=>'Septiembre','10'=>'Octubre','11'=>'Noviembre','12'=>'Diciembre'];
 // Obtener lista de plazas desde la base de datos
 $plazas = [];
 $sql_plazas = "SELECT Clave_Presupuestal, CD_Trabajo, Categoria, Des_Categoria, Salario FROM plazas ORDER BY Categoria, Des_Categoria";
@@ -75,32 +75,148 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Si no hay errores, guardar la compatibilidad
         if (empty($errors)) {
-            $tipo_movimiento = ($_POST['resolucion'] ?? 'A') == 'A' ? 1 : 0;
-            $temporalidad_inc = $_POST['auth_desde'] ?? date('Y-m-d');
-            $temporalidad_fin = $_POST['auth_hasta'] ?? date('Y-m-d', strtotime('+1 year'));
-            $plaza_activa = $_POST['codigo_presupuestal2'] ?? '';
-            $ciudad = $_POST['lugar'] ?? 'ENSENADA';
-            $fecha_creacion = date('Y-m-d');
-            $ubicacion = $_POST['ubicacion2'] ?? '';
-            $horario = $_POST['horario'] ?? '';
-            $tiempo_traslado = $_POST['tiempo_traslado'] ?? '';
-            $clave_presupuestal = $_POST['codigo_presupuestal2'] ?? '';
-            
-            $sql_compatibilidad = "INSERT INTO compatibilidad (Tipo_de_Movimiento, Temporalidad_INC, Temporalidad_FIN, Plaza_Activa, Ciudad, Fecha_de_Creacion, Ubicacion, Horario, Tiempo_de_Traslado, ID_Trabajador, Clave_Presupuestal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            
-            $stmt_comp = $conn->prepare($sql_compatibilidad);
-            $stmt_comp->bind_param("issssssssis", $tipo_movimiento, $temporalidad_inc, $temporalidad_fin, $plaza_activa, $ciudad, $fecha_creacion, $ubicacion, $horario, $tiempo_traslado, $id_trabajador, $clave_presupuestal);
-            
-            if ($stmt_comp->execute()) {
-                $submitted = true;
-                $mensaje_exito = "Solicitud de compatibilidad registrada exitosamente con ID: " . $conn->insert_id;
-            } else {
-                $errors[] = "Error al guardar la compatibilidad: " . $conn->error;
-            }
-            $stmt_comp->close();
-        }
+    $tipo_movimiento = ($_POST['resolucion'] ?? 'A') == 'A' ? 1 : 0;
+    $temporalidad_inc = $_POST['auth_desde'] ?? date('Y-m-d');
+    $temporalidad_fin = $_POST['auth_hasta'] ?? date('Y-m-d', strtotime('+1 year'));
+    $plaza_activa = $_POST['codigo_presupuestal2'] ?? '';
+    $ciudad = $_POST['lugar'] ?? 'ENSENADA';
+    $fecha_creacion = date('Y-m-d');
+    $clave_presupuestal = $_POST['codigo_presupuestal2'] ?? '';
+    
+    // Construir fechas
+    $fecha_alta1 = null;
+    if (!empty($_POST['alta_dia1']) && !empty($_POST['alta_mes1']) && !empty($_POST['alta_ano1'])) {
+        $fecha_alta1 = $_POST['alta_ano1'] . '-' . $_POST['alta_mes1'] . '-' . str_pad($_POST['alta_dia1'], 2, '0', STR_PAD_LEFT);
     }
+    
+    $fecha_fin1 = null;
+    if (!empty($_POST['fin_dia1']) && !empty($_POST['fin_mes1']) && !empty($_POST['fin_ano1'])) {
+        $fecha_fin1 = $_POST['fin_ano1'] . '-' . $_POST['fin_mes1'] . '-' . str_pad($_POST['fin_dia1'], 2, '0', STR_PAD_LEFT);
+    }
+    
+    // Insertar todo en una sola tabla
+    $sql = "INSERT INTO compatibilidad (
+        Tipo_de_Movimiento, Temporalidad_INC, Temporalidad_FIN, 
+        Plaza_Activa, Ciudad, Fecha_de_Creacion, ID_Trabajador, Clave_Presupuestal,
+        Puesto_Actual, Puesto_Nuevo, Tipo_Nombramiento1, Tipo_Nombramiento2,
+        Fecha_Alta1, Fecha_Alta2, Fecha_Fin1, Fecha_Fin2,
+        Remuneracion1, Remuneracion2, Ubicacion1, Ubicacion2,
+        Institucion1, Institucion2
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    $stmt = $conn->prepare($sql);
+    
+    $puesto_actual = $_POST['puesto_actual'] ?? '';
+    $puesto_nuevo = $_POST['puesto_nuevo'] ?? '';
+    $tipo1 = $_POST['tipo_nombramiento1'] ?? '10';
+    $tipo2 = $_POST['tipo_nombramiento2'] ?? '';
+    $rem1 = $_POST['remuneracion1'] ?? 0;
+    $rem2 = $_POST['remuneracion2'] ?? 0;
+    $ubicacion1 = $_POST['ubicacion1'] ?? '';
+    $ubicacion2 = $_POST['ubicacion2'] ?? '';
+    $inst1 = $_POST['inst1_nombre'] ?? $institucion1;
+    $inst2 = $_POST['inst2_nombre'] ?? $institucion2;
+    
+    // Fecha alta 2
+    $fecha_alta2 = null;
+    if (!empty($_POST['alta_dia2']) && !empty($_POST['alta_mes2']) && !empty($_POST['alta_ano2'])) {
+        $fecha_alta2 = $_POST['alta_ano2'] . '-' . $_POST['alta_mes2'] . '-' . str_pad($_POST['alta_dia2'], 2, '0', STR_PAD_LEFT);
+    }
+    
+    $fecha_fin2 = null;
+    if (!empty($_POST['fin_dia2']) && !empty($_POST['fin_mes2']) && !empty($_POST['fin_ano2'])) {
+        $fecha_fin2 = $_POST['fin_ano2'] . '-' . $_POST['fin_mes2'] . '-' . str_pad($_POST['fin_dia2'], 2, '0', STR_PAD_LEFT);
+    }
+    
+    $stmt->bind_param(
+        "isssssisssssssssddssss",
+        $tipo_movimiento, $temporalidad_inc, $temporalidad_fin,
+        $plaza_activa, $ciudad, $fecha_creacion, $id_trabajador, $clave_presupuestal,
+        $puesto_actual, $puesto_nuevo, $tipo1, $tipo2,
+        $fecha_alta1, $fecha_alta2, $fecha_fin1, $fecha_fin2,
+        $rem1, $rem2, $ubicacion1, $ubicacion2,
+        $inst1, $inst2
+    );
+    
+    if ($stmt->execute()) {
+        $submitted = true;
+        $mensaje_exito = "✅ Solicitud registrada exitosamente con ID: " . $conn->insert_id;
+    } else {
+        $errors[] = "❌ Error al guardar: " . $stmt->error;
+    }
+    
+    $stmt->close();
 }
+    
+    // === Datos de Institución 2 (Puesto a desempeñar) ===
+    if (!$error_puestos) {
+        $fecha_alta2 = null;
+        if (!empty($_POST['alta_dia2']) && !empty($_POST['alta_mes2']) && !empty($_POST['alta_ano2'])) {
+            $fecha_alta2 = sprintf("%04d-%02d-%02d", 
+                $_POST['alta_ano2'], 
+                $_POST['alta_mes2'], 
+                $_POST['alta_dia2']
+            );
+        }
+        
+        // Fecha de finalización para Institución 2
+        $fecha_fin2 = null;
+        $tipo_nombramiento2 = $_POST['tipo_nombramiento2'] ?? '';
+        if ($tipo_nombramiento2 != '10' && !empty($tipo_nombramiento2)) {
+            if (!empty($_POST['fin_dia2']) && !empty($_POST['fin_mes2']) && !empty($_POST['fin_ano2'])) {
+                $fecha_fin2 = sprintf("%04d-%02d-%02d", 
+                    $_POST['fin_ano2'], 
+                    $_POST['fin_mes2'], 
+                    $_POST['fin_ano2']
+                );
+            }
+        }
+        
+        // Insertar puesto de Institución 2
+        $sql_puesto2 = "INSERT INTO compatibilidad_puestos (
+            ID_Compatibilidad, Institucion_Num, Puesto, Clave_Presupuestal, 
+            Unidad_Adscripcion, Tipo_Nombramiento, Fecha_Alta, Fecha_Fin, 
+            Remuneracion, Ubicacion, Horario, Tiempo_Traslado
+        ) VALUES (?, 2, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        $stmt_puesto2 = $conn->prepare($sql_puesto2);
+        $puesto_nuevo = $_POST['puesto_nuevo'] ?? '';
+        $clave_presupuestal2 = $_POST['codigo_presupuestal2'] ?? '';
+        $unidad_adscripcion2 = $_POST['unidad_adscripcion2'] ?? '';
+        $remuneracion2 = $_POST['remuneracion2'] ?? 0;
+        $ubicacion2 = $_POST['ubicacion2'] ?? '';
+        $horario2 = ''; // Puedes agregar campo de horario específico si lo deseas
+        $tiempo_traslado2 = $_POST['tiempo_traslado'] ?? '';
+        
+        $stmt_puesto2->bind_param(
+            "issssssdsss",
+            $id_compatibilidad,
+            $puesto_nuevo,
+            $clave_presupuestal2,
+            $unidad_adscripcion2,
+            $tipo_nombramiento2,
+            $fecha_alta2,
+            $fecha_fin2,
+            $remuneracion2,
+            $ubicacion2,
+            $horario2,
+            $tiempo_traslado2
+        );
+        
+        if ($stmt_puesto2->execute()) {
+            $submitted = true;
+            $mensaje_exito = "Solicitud de compatibilidad registrada exitosamente con ID: " . $id_compatibilidad;
+        } else {
+            $errors[] = "Error al guardar datos del puesto nuevo: " . $conn->error;
+        }
+        $stmt_puesto2->close();
+    }
+    
+} else {
+    $errors[] = "Error al guardar la compatibilidad: " . $conn->error;
+}
+$stmt_comp->close();
+    }
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -849,39 +965,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="text" name="unidad_adscripcion1" value="<?= htmlspecialchars($_POST['unidad_adscripcion1'] ?? 'INSTITUTO TECNOLÓGICO DE ENSENADA') ?>">
                 </div>
                 <div class="field">
-                    <label>Tipo de Nombramiento</label>
-                    <select name="tipo_nombramiento1">
-                        <option value="10" <?= (($_POST['tipo_nombramiento1'] ?? '10') == '10') ? 'selected' : '' ?>>DEFINITIVO</option>
-                        <option value="20" <?= (($_POST['tipo_nombramiento1'] ?? '') == '20') ? 'selected' : '' ?>>INTERINO</option>
-                        <option value="30" <?= (($_POST['tipo_nombramiento1'] ?? '') == '30') ? 'selected' : '' ?>>HONORARIOS</option>
-                        <option value="40" <?= (($_POST['tipo_nombramiento1'] ?? '') == '40') ? 'selected' : '' ?>>CONTRATO</option>
-                    </select>
-                </div>
+    <label>Tipo de Nombramiento</label>
+    <select name="tipo_nombramiento1" onchange="toggleFechaFin('inst1', this.value)">
+        <option value="10" <?= (($_POST['tipo_nombramiento1'] ?? '10') == '10') ? 'selected' : '' ?>>DEFINITIVO</option>
+        <option value="20" <?= (($_POST['tipo_nombramiento1'] ?? '') == '20') ? 'selected' : '' ?>>INTERINO</option>
+        <option value="30" <?= (($_POST['tipo_nombramiento1'] ?? '') == '30') ? 'selected' : '' ?>>HONORARIOS</option>
+        <option value="40" <?= (($_POST['tipo_nombramiento1'] ?? '') == '40') ? 'selected' : '' ?>>CONTRATO</option>
+    </select>
+</div>
             </div>
 
             <div class="field-row col-4">
-                <div class="field">
-                    <label>Fecha de Alta — Día</label>
-                    <input type="number" name="alta_dia1" min="1" max="31" value="<?= htmlspecialchars($_POST['alta_dia1'] ?? '01') ?>" style="font-family:var(--font-mono);">
-                </div>
-                <div class="field">
-                    <label>Mes</label>
-                    <select name="alta_mes1">
-                        <?php $meses=['01'=>'Enero','02'=>'Febrero','03'=>'Marzo','04'=>'Abril','05'=>'Mayo','06'=>'Junio','07'=>'Julio','08'=>'Agosto','09'=>'Septiembre','10'=>'Octubre','11'=>'Noviembre','12'=>'Diciembre'];
-                        foreach($meses as $k=>$v): ?>
-                        <option value="<?=$k?>" <?=(($_POST['alta_mes1'] ?? '09')==$k)?'selected':''?>><?=$v?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="field">
-                    <label>Año</label>
-                    <input type="number" name="alta_ano1" min="1990" max="2099" value="<?= htmlspecialchars($_POST['alta_ano1'] ?? '2009') ?>" style="font-family:var(--font-mono);">
-                </div>
-                <div class="field">
-                    <label>Remuneración ($)</label>
-                    <input type="number" name="remuneracion1" step="0.01" value="<?= htmlspecialchars($_POST['remuneracion1'] ?? '3751.50') ?>" style="font-family:var(--font-mono);">
-                </div>
-            </div>
+    <div class="field">
+        <label>Fecha de Alta — Día</label>
+        <input type="number" name="alta_dia1" min="1" max="31" value="<?= htmlspecialchars($_POST['alta_dia1'] ?? '01') ?>" style="font-family:var(--font-mono);">
+    </div>
+    <div class="field">
+        <label>Mes</label>
+        <select name="alta_mes1">
+            <?php foreach($meses as $k=>$v): ?>
+            <option value="<?=$k?>" <?=(($_POST['alta_mes1'] ?? '09')==$k)?'selected':''?>><?=$v?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div class="field">
+        <label>Año</label>
+        <input type="number" name="alta_ano1" min="1990" max="2099" value="<?= htmlspecialchars($_POST['alta_ano1'] ?? '2009') ?>" style="font-family:var(--font-mono);">
+    </div>
+    <div class="field">
+        <label>Remuneración ($)</label>
+        <input type="number" name="remuneracion1" step="0.01" value="<?= htmlspecialchars($_POST['remuneracion1'] ?? '3751.50') ?>" style="font-family:var(--font-mono);">
+    </div>
+</div>
+
+<!-- Fecha de Finalización — solo si NO es Definitivo -->
+<div class="field-row col-3" id="fin-inst1" style="display:<?= (($_POST['tipo_nombramiento1'] ?? '10') != '10') ? 'grid' : 'none' ?>;">
+    <div class="field">
+        <label>Fecha de Finalización — Día</label>
+        <input type="number" name="fin_dia1" min="1" max="31" value="<?= htmlspecialchars($_POST['fin_dia1'] ?? '') ?>" style="font-family:var(--font-mono);">
+    </div>
+    <div class="field">
+        <label>Mes</label>
+        <select name="fin_mes1">
+            <option value="">— Mes —</option>
+            <?php foreach($meses as $k=>$v): ?>
+            <option value="<?=$k?>" <?=(($_POST['fin_mes1'] ?? '')==$k)?'selected':''?>><?=$v?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div class="field">
+        <label>Año</label>
+        <input type="number" name="fin_ano1" min="1990" max="2099" value="<?= htmlspecialchars($_POST['fin_ano1'] ?? '') ?>" style="font-family:var(--font-mono);">
+    </div>
+</div>
 
             <div class="field-row col-2">
                 <div class="field">
@@ -907,83 +1043,107 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <!-- ── Institución 2 ── -->
-    <div class="doc-section">
-        <div class="section-header">III. Institución 2 — Valida los Datos del Puesto a Desempeñar</div>
-        <div class="section-body">
-            <div class="field-row col-1">
-                <div class="field">
-                    <label>Nombre de la Institución 2</label>
-                    <input type="text" name="inst2_nombre" value="<?= htmlspecialchars($_POST['inst2_nombre'] ?? $institucion2) ?>">
-                </div>
-            </div>
-
-            <div class="label-divider">Datos del puesto a desempeñar</div>
-
-            <div class="field-row col-2-1">
-                <div class="field">
-                    <label>Puesto o Contrato</label>
-                    <input type="text" name="puesto_nuevo" id="puesto_nuevo" value="<?= htmlspecialchars($_POST['puesto_nuevo'] ?? '') ?>">
-                </div>
-                <div class="field">
-                    <label>Código Presupuestal</label>
-                    <input type="text" name="codigo_presupuestal2" id="codigo_presupuestal2" value="<?= htmlspecialchars($_POST['codigo_presupuestal2'] ?? '') ?>" style="font-family:var(--font-mono);">
-                </div>
-            </div>
-
-            <div class="field-row col-2">
-                <div class="field">
-                    <label>Unidad de Adscripción / Centro de Trabajo</label>
-                    <input type="text" name="unidad_adscripcion2" value="<?= htmlspecialchars($_POST['unidad_adscripcion2'] ?? '') ?>">
-                </div>
-                <div class="field">
-                    <label>Tipo de Nombramiento</label>
-                    <select name="tipo_nombramiento2">
-                        <option value="">— Seleccionar —</option>
-                        <option value="10">DEFINITIVO</option>
-                        <option value="20" <?= (($_POST['tipo_nombramiento2'] ?? '') == '20') ? 'selected' : '' ?>>INTERINO</option>
-                        <option value="30">HONORARIOS</option>
-                        <option value="40">CONTRATO</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="field-row col-4">
-                <div class="field">
-                    <label>Fecha Alta — Día</label>
-                    <input type="number" name="alta_dia2" min="1" max="31" value="<?= htmlspecialchars($_POST['alta_dia2'] ?? '') ?>" style="font-family:var(--font-mono);">
-                </div>
-                <div class="field">
-                    <label>Mes</label>
-                    <select name="alta_mes2">
-                        <option value="">—</option>
-                        <?php foreach($meses as $k=>$v): ?>
-                        <option value="<?=$k?>" <?=(($_POST['alta_mes2'] ?? '')==$k)?'selected':''?>><?=$v?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="field">
-                    <label>Año</label>
-                    <input type="number" name="alta_ano2" min="1990" max="2099" value="<?= htmlspecialchars($_POST['alta_ano2'] ?? '') ?>" style="font-family:var(--font-mono);">
-                </div>
-                <div class="field">
-                    <label>Remuneración Actual ($)</label>
-                    <input type="number" name="remuneracion2" id="remuneracion2" step="0.01" value="<?= htmlspecialchars($_POST['remuneracion2'] ?? '') ?>" style="font-family:var(--font-mono);">
-                </div>
-            </div>
-
-            <div class="field-row col-1">
-                <div class="field">
-                    <label>Ubicación del centro de trabajo, horario y tiempo de traslado</label>
-                    <textarea name="ubicacion2" id="ubicacion2"><?= htmlspecialchars($_POST['ubicacion2'] ?? '') ?></textarea>
-                </div>
-            </div>
-
-            <div class="nota-legal" style="margin-top:12px;">
-                (*) Los contratos de honorarios NO sujetos al artículo 131 del RLFPRH, únicamente deberán establecer las fechas de inicio y término del contrato, así como la(s) fecha(s) de entrega(s) parciales y/o totales de los productos o servicios correspondientes.
+<!-- ── Institución 2 ── -->
+<div class="doc-section">
+    <div class="section-header">III. Institución 2 — Valida los Datos del Puesto a Desempeñar</div>
+    <div class="section-body">
+        <div class="field-row col-1">
+            <div class="field">
+                <label>Nombre de la Institución 2</label>
+                <input type="text" name="inst2_nombre" value="<?= htmlspecialchars($_POST['inst2_nombre'] ?? $institucion2) ?>">
             </div>
         </div>
+
+        <div class="label-divider">Datos del puesto a desempeñar</div>
+
+        <div class="field-row col-2-1">
+            <div class="field">
+                <label>Puesto o Contrato</label>
+                <input type="text" name="puesto_nuevo" id="puesto_nuevo" value="<?= htmlspecialchars($_POST['puesto_nuevo'] ?? '') ?>">
+            </div>
+            <div class="field">
+                <label>Código Presupuestal</label>
+                <input type="text" name="codigo_presupuestal2" id="codigo_presupuestal2" value="<?= htmlspecialchars($_POST['codigo_presupuestal2'] ?? '') ?>" style="font-family:var(--font-mono);">
+            </div>
+        </div>
+
+        <div class="field-row col-2">
+            <div class="field">
+                <label>Unidad de Adscripción / Centro de Trabajo</label>
+                <input type="text" name="unidad_adscripcion2" value="<?= htmlspecialchars($_POST['unidad_adscripcion2'] ?? '') ?>">
+            </div>
+            <div class="field">
+                <label>Tipo de Nombramiento</label>
+                <select name="tipo_nombramiento2" id="tipo_nombramiento2" onchange="toggleFechaFin('inst2', this.value)">
+                    <option value="">— Seleccionar —</option>
+                    <option value="10" <?= (($_POST['tipo_nombramiento2'] ?? '') == '10') ? 'selected' : '' ?>>DEFINITIVO</option>
+                    <option value="20" <?= (($_POST['tipo_nombramiento2'] ?? '') == '20') ? 'selected' : '' ?>>INTERINO</option>
+                    <option value="30" <?= (($_POST['tipo_nombramiento2'] ?? '') == '30') ? 'selected' : '' ?>>HONORARIOS</option>
+                    <option value="40" <?= (($_POST['tipo_nombramiento2'] ?? '') == '40') ? 'selected' : '' ?>>CONTRATO</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Grid de 4 columnas para Fecha Alta -->
+        <div class="field-row col-4">
+            <div class="field">
+                <label>Fecha Alta — Día</label>
+                <input type="number" name="alta_dia2" min="1" max="31" value="<?= htmlspecialchars($_POST['alta_dia2'] ?? '') ?>" style="font-family:var(--font-mono);">
+            </div>
+            <div class="field">
+                <label>Mes</label>
+                <select name="alta_mes2">
+                    <option value="">—</option>
+                    <?php 
+                    $meses = ['01'=>'Enero','02'=>'Febrero','03'=>'Marzo','04'=>'Abril','05'=>'Mayo','06'=>'Junio','07'=>'Julio','08'=>'Agosto','09'=>'Septiembre','10'=>'Octubre','11'=>'Noviembre','12'=>'Diciembre'];
+                    foreach($meses as $k=>$v): ?>
+                    <option value="<?=$k?>" <?=(($_POST['alta_mes2'] ?? '')==$k)?'selected':''?>><?=$v?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="field">
+                <label>Año</label>
+                <input type="number" name="alta_ano2" min="1990" max="2099" value="<?= htmlspecialchars($_POST['alta_ano2'] ?? '') ?>" style="font-family:var(--font-mono);">
+            </div>
+            <div class="field">
+                <label>Remuneración Actual ($)</label>
+                <input type="number" name="remuneracion2" id="remuneracion2" step="0.01" value="<?= htmlspecialchars($_POST['remuneracion2'] ?? '') ?>" style="font-family:var(--font-mono);">
+            </div>
+        </div>
+
+        <!-- Fecha de Finalización - Fila separada (fuera del col-4) -->
+        <div class="field-row col-3" id="fin-inst2" style="display:<?= (!empty($_POST['tipo_nombramiento2']) && $_POST['tipo_nombramiento2'] != '10') ? 'grid' : 'none' ?>; margin-top: 12px;">
+            <div class="field">
+                <label>Fecha de Finalización — Día</label>
+                <input type="number" name="fin_dia2" min="1" max="31" value="<?= htmlspecialchars($_POST['fin_dia2'] ?? '') ?>" style="font-family:var(--font-mono);">
+            </div>
+            <div class="field">
+                <label>Mes</label>
+                <select name="fin_mes2">
+                    <option value="">— Mes —</option>
+                    <?php foreach($meses as $k=>$v): ?>
+                    <option value="<?=$k?>" <?=(($_POST['fin_mes2'] ?? '')==$k)?'selected':''?>><?=$v?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="field">
+                <label>Año</label>
+                <input type="number" name="fin_ano2" min="1990" max="2099" value="<?= htmlspecialchars($_POST['fin_ano2'] ?? '') ?>" style="font-family:var(--font-mono);">
+            </div>
+        </div>
+
+        <div class="field-row col-1">
+            <div class="field">
+                <label>Ubicación del centro de trabajo, horario y tiempo de traslado</label>
+                <textarea name="ubicacion2" id="ubicacion2"><?= htmlspecialchars($_POST['ubicacion2'] ?? '') ?></textarea>
+            </div>
+        </div>
+
+        <div class="nota-legal" style="margin-top:12px;">
+            (*) Los contratos de honorarios NO sujetos al artículo 131 del RLFPRH, únicamente deberán establecer las fechas de inicio y término del contrato, así como la(s) fecha(s) de entrega(s) parciales y/o totales de los productos o servicios correspondientes.
+        </div>
     </div>
+</div>
 
     <!-- ── Lugar y Fecha ── -->
     <div class="doc-section">
@@ -1533,6 +1693,12 @@ const mesesObj = {
     '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',
     '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
 };
+
+function toggleFechaFin(inst, valor) {
+    const bloque = document.getElementById('fin-' + inst);
+    if (!bloque) return;
+    bloque.style.display = (valor !== '10' && valor !== '') ? 'grid' : 'none';
+}
 </script>
 </body>
 </html>

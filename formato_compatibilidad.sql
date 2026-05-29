@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 26-05-2026 a las 05:02:05
+-- Tiempo de generación: 29-05-2026 a las 17:10:16
 -- Versión del servidor: 11.7.2-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -64,6 +64,28 @@ CREATE TABLE `compatibilidad` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `compatibilidad_puestos`
+--
+
+CREATE TABLE `compatibilidad_puestos` (
+  `ID_Puesto` int(11) NOT NULL,
+  `ID_Compatibilidad` int(11) NOT NULL,
+  `Institucion_Num` tinyint(1) NOT NULL COMMENT '1=Institución 1, 2=Institución 2',
+  `Puesto` varchar(255) NOT NULL,
+  `Clave_Presupuestal` varchar(30) DEFAULT NULL,
+  `Unidad_Adscripcion` varchar(255) DEFAULT NULL,
+  `Tipo_Nombramiento` varchar(2) DEFAULT NULL,
+  `Fecha_Alta` date DEFAULT NULL,
+  `Fecha_Fin` date DEFAULT NULL,
+  `Remuneracion` decimal(12,2) DEFAULT NULL,
+  `Ubicacion` text DEFAULT NULL,
+  `Horario` varchar(255) DEFAULT NULL,
+  `Tiempo_Traslado` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `plazas`
 --
 
@@ -109,6 +131,13 @@ ALTER TABLE `compatibilidad`
   ADD KEY `fk_comp_autoridad` (`ID_Autoridad`);
 
 --
+-- Indices de la tabla `compatibilidad_puestos`
+--
+ALTER TABLE `compatibilidad_puestos`
+  ADD PRIMARY KEY (`ID_Puesto`),
+  ADD KEY `fk_puesto_compatibilidad` (`ID_Compatibilidad`);
+
+--
 -- Indices de la tabla `plazas`
 --
 ALTER TABLE `plazas`
@@ -138,6 +167,12 @@ ALTER TABLE `compatibilidad`
   MODIFY `ID_Compatibilidad` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `compatibilidad_puestos`
+--
+ALTER TABLE `compatibilidad_puestos`
+  MODIFY `ID_Puesto` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `trabajadores`
 --
 ALTER TABLE `trabajadores`
@@ -154,6 +189,12 @@ ALTER TABLE `compatibilidad`
   ADD CONSTRAINT `fk_comp_autoridad` FOREIGN KEY (`ID_Autoridad`) REFERENCES `autoridades` (`ID_Autoridad`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_comp_plaza` FOREIGN KEY (`Clave_Presupuestal`) REFERENCES `plazas` (`Clave_Presupuestal`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_comp_trabajador` FOREIGN KEY (`ID_Trabajador`) REFERENCES `trabajadores` (`ID_Trabajador`) ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `compatibilidad_puestos`
+--
+ALTER TABLE `compatibilidad_puestos`
+  ADD CONSTRAINT `fk_puesto_compatibilidad` FOREIGN KEY (`ID_Compatibilidad`) REFERENCES `compatibilidad` (`ID_Compatibilidad`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
