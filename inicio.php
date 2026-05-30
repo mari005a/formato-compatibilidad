@@ -1388,7 +1388,7 @@ function actualizarDatosImpresion() {
     const ano = get('input[name="fecha_ano"]');
     document.getElementById('print_lugar_fecha').innerHTML = lugar + ' a ' + dia + ' de ' + mes + ' de ' + ano;
 
-    // Firmas
+    // Firmass
     document.getElementById('print_firma_cert').innerHTML = get('input[name="firma_cert_nombre"]') + '<br><small>DIRECTOR DE PERSONAL</small>';
     document.getElementById('print_firma_director').innerHTML = get('input[name="director_plantel"]') + '<br><small>DIRECTOR DEL PLANTEL</small>';
 
