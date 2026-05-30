@@ -1,7 +1,7 @@
 <?php
-$servername = "192.168.56.1";   // o la IP de tu servidor
+$servername = "localhost";   // o la IP de tu servidor
 $username   = "root";        // tu usuario de MariaDB
-$password   = "mariana";            // tu contraseña de MariaDB
+$password   = "root1234";            // tu contraseña de MariaDB
 $dbname     = "formato_compatibilidad";   // la base de datos que creamos
 
 $conn = new mysqli($servername, $username, $password, $dbname);
