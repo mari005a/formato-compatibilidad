@@ -1388,9 +1388,10 @@ function actualizarDatosImpresion() {
     const ano = get('input[name="fecha_ano"]');
     document.getElementById('print_lugar_fecha').innerHTML = lugar + ' a ' + dia + ' de ' + mes + ' de ' + ano;
 
-    // Firmass
-    document.getElementById('print_firma_cert').innerHTML = get('input[name="firma_cert_nombre"]') + '<br><small>DIRECTOR DE PERSONAL</small>';
-    document.getElementById('print_firma_director').innerHTML = get('input[name="director_plantel"]') + '<br><small>DIRECTOR DEL PLANTEL</small>';
+
+    // Firmas 
+    document.getElementById('print_firma_cert').innerHTML = get('input[name="firma_cert_nombre"]') + '<br><small>DIRECTOR DE PERSONAL — ' + get('input[name="inst1_nombre"]') + '</small>'; // CAMBIO 1
+    document.getElementById('print_firma_director').innerHTML = get('input[name="director_plantel"]') + '<br><small>DIRECTOR DEL PLANTEL — ' + get('input[name="inst2_nombre"]') + '</small>'; // CAMBIO 1
 
     // Analista
     document.getElementById('print_analista_fecha').innerHTML = 'Fecha de análisis: ' + get('input[name="fecha_analisis"]') + ' &nbsp;&nbsp; Analista: ' + get('input[name="nombre_analista"]');
