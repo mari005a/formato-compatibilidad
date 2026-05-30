@@ -76,74 +76,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Si no hay errores, guardar la compatibilidad
         if (empty($errors)) {
-            $tipo_movimiento = ($_POST['resolucion'] ?? 'A') == 'A' ? 1 : 0;
+            $tipo_movimiento  = ($_POST['resolucion'] ?? 'A') == 'A' ? 1 : 0;
             $temporalidad_inc = $_POST['auth_desde'] ?? date('Y-m-d');
             $temporalidad_fin = $_POST['auth_hasta'] ?? date('Y-m-d', strtotime('+1 year'));
-            $plaza_activa = $_POST['codigo_presupuestal2'] ?? '';
-            $ciudad = $_POST['lugar'] ?? 'ENSENADA';
-            $fecha_creacion = date('Y-m-d');
-            $clave_presupuestal = $_POST['codigo_presupuestal2'] ?? '';
-
-            // Construir fecha de alta institución 1
-            $fecha_alta1 = null;
-            if (!empty($_POST['alta_dia1']) && !empty($_POST['alta_mes1']) && !empty($_POST['alta_ano1'])) {
-                $fecha_alta1 = $_POST['alta_ano1'] . '-' . $_POST['alta_mes1'] . '-' . str_pad($_POST['alta_dia1'], 2, '0', STR_PAD_LEFT);
+            $plaza_activa     = $_POST['codigo_presupuestal2'] ?? '';
+            $ciudad           = $_POST['lugar'] ?? 'ENSENADA';
+            $fecha_creacion   = date('Y-m-d');
+            // CORRECCIÓN FK: buscar Clave_Presupuestal real en plazas usando la Categoria del formulario
+            $categoria_sel = $_POST['codigo_presupuestal2'] ?? '';
+            $clave_presupuestal = null;
+            if (!empty($categoria_sel)) {
+                $sql_busca_plaza = "SELECT Clave_Presupuestal FROM plazas WHERE Categoria = ? LIMIT 1";
+                $stmt_busca = $conn->prepare($sql_busca_plaza);
+                $stmt_busca->bind_param("s", $categoria_sel);
+                $stmt_busca->execute();
+                $res_plaza = $stmt_busca->get_result();
+                if ($row_plaza = $res_plaza->fetch_assoc()) {
+                    $clave_presupuestal = $row_plaza['Clave_Presupuestal'];
+                }
+                $stmt_busca->close();
             }
+            // OPCION A: solo columnas que existen en la tabla compatibilidad
+            $ubicacion        = $_POST['ubicacion1'] ?? '';
+            $horario          = '';
+            $tiempo_traslado  = '';
 
-            // Construir fecha de finalización institución 1
-            $fecha_fin1 = null;
-            if (!empty($_POST['fin_dia1']) && !empty($_POST['fin_mes1']) && !empty($_POST['fin_ano1'])) {
-                $fecha_fin1 = $_POST['fin_ano1'] . '-' . $_POST['fin_mes1'] . '-' . str_pad($_POST['fin_dia1'], 2, '0', STR_PAD_LEFT);
-            }
-
-            // Construir fecha de alta institución 2
-            $fecha_alta2 = null;
-            if (!empty($_POST['alta_dia2']) && !empty($_POST['alta_mes2']) && !empty($_POST['alta_ano2'])) {
-                $fecha_alta2 = $_POST['alta_ano2'] . '-' . $_POST['alta_mes2'] . '-' . str_pad($_POST['alta_dia2'], 2, '0', STR_PAD_LEFT);
-            }
-
-            // Construir fecha de finalización institución 2
-            $fecha_fin2 = null;
-            if (!empty($_POST['fin_dia2']) && !empty($_POST['fin_mes2']) && !empty($_POST['fin_ano2'])) {
-                $fecha_fin2 = $_POST['fin_ano2'] . '-' . $_POST['fin_mes2'] . '-' . str_pad($_POST['fin_dia2'], 2, '0', STR_PAD_LEFT);
-            }
-
-            // Insertar todo en la tabla compatibilidad
+            // OPCION A: INSERT ajustado a columnas reales de la tabla compatibilidad
             $sql = "INSERT INTO compatibilidad (
                 Tipo_de_Movimiento, Temporalidad_INC, Temporalidad_FIN,
-                Plaza_Activa, Ciudad, Fecha_de_Creacion, ID_Trabajador, Clave_Presupuestal,
-                Puesto_Actual, Puesto_Nuevo, Tipo_Nombramiento1, Tipo_Nombramiento2,
-                Fecha_Alta1, Fecha_Alta2, Fecha_Fin1, Fecha_Fin2,
-                Remuneracion1, Remuneracion2, Ubicacion1, Ubicacion2,
-                Institucion1, Institucion2
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                Plaza_Activa, Ciudad, Fecha_de_Creacion,
+                Ubicacion, Horario, Tiempo_de_Traslado,
+                ID_Trabajador, Clave_Presupuestal
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             $stmt = $conn->prepare($sql);
-
-            $puesto_actual = $_POST['puesto_actual'] ?? '';
-            $puesto_nuevo  = $_POST['puesto_nuevo'] ?? '';
-            $tipo1         = $_POST['tipo_nombramiento1'] ?? '10';
-            $tipo2         = $_POST['tipo_nombramiento2'] ?? '';
-            $rem1          = $_POST['remuneracion1'] ?? 0;
-            $rem2          = $_POST['remuneracion2'] ?? 0;
-            $ubicacion1    = $_POST['ubicacion1'] ?? '';
-            $ubicacion2    = $_POST['ubicacion2'] ?? '';
-            $inst1         = $_POST['inst1_nombre'] ?? $institucion1;
-            $inst2         = $_POST['inst2_nombre'] ?? $institucion2;
-
             $stmt->bind_param(
-                "isssssisssssssssddssss",
+                "isssssssssi",
                 $tipo_movimiento, $temporalidad_inc, $temporalidad_fin,
-                $plaza_activa, $ciudad, $fecha_creacion, $id_trabajador, $clave_presupuestal,
-                $puesto_actual, $puesto_nuevo, $tipo1, $tipo2,
-                $fecha_alta1, $fecha_alta2, $fecha_fin1, $fecha_fin2,
-                $rem1, $rem2, $ubicacion1, $ubicacion2,
-                $inst1, $inst2
+                $plaza_activa, $ciudad, $fecha_creacion,
+                $ubicacion, $horario, $tiempo_traslado,
+                $id_trabajador, $clave_presupuestal
             );
 
             if ($stmt->execute()) {
+                $id_compatibilidad = $conn->insert_id; // OPCION A: guardar ID para usarlo en compatibilidad_puestos
+
+                // OPCION A: guardar puesto de institución 1 en compatibilidad_puestos
+                $fecha_alta1 = null;
+                if (!empty($_POST['alta_dia1']) && !empty($_POST['alta_mes1']) && !empty($_POST['alta_ano1'])) {
+                    $fecha_alta1 = $_POST['alta_ano1'] . '-' . $_POST['alta_mes1'] . '-' . str_pad($_POST['alta_dia1'], 2, '0', STR_PAD_LEFT);
+                }
+                $fecha_fin1 = null;
+                if (!empty($_POST['fin_dia1']) && !empty($_POST['fin_mes1']) && !empty($_POST['fin_ano1'])) {
+                    $fecha_fin1 = $_POST['fin_ano1'] . '-' . $_POST['fin_mes1'] . '-' . str_pad($_POST['fin_dia1'], 2, '0', STR_PAD_LEFT);
+                }
+                $sql_p1 = "INSERT INTO compatibilidad_puestos (ID_Compatibilidad, Institucion_Num, Puesto, Codigo_Presupuestal, Unidad_Adscripcion, Tipo_Nombramiento, Fecha_Alta, Fecha_Fin, Remuneracion, Ubicacion) VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $stmt_p1 = $conn->prepare($sql_p1);
+                $p1_puesto  = $_POST['puesto_actual'] ?? '';
+                $p1_codigo  = $_POST['codigo_presupuestal1'] ?? '';
+                $p1_unidad  = $_POST['unidad_adscripcion1'] ?? '';
+                $p1_tipo    = $_POST['tipo_nombramiento1'] ?? '';
+                $p1_rem     = $_POST['remuneracion1'] ?? 0;
+                $p1_ubic    = $_POST['ubicacion1'] ?? '';
+                $stmt_p1->bind_param("issssssdss", $id_compatibilidad, $p1_puesto, $p1_codigo, $p1_unidad, $p1_tipo, $fecha_alta1, $fecha_fin1, $p1_rem, $p1_ubic);
+                $stmt_p1->execute();
+                $stmt_p1->close();
+
+                // OPCION A: guardar puesto de institución 2 en compatibilidad_puestos
+                $fecha_alta2 = null;
+                if (!empty($_POST['alta_dia2']) && !empty($_POST['alta_mes2']) && !empty($_POST['alta_ano2'])) {
+                    $fecha_alta2 = $_POST['alta_ano2'] . '-' . $_POST['alta_mes2'] . '-' . str_pad($_POST['alta_dia2'], 2, '0', STR_PAD_LEFT);
+                }
+                $fecha_fin2 = null;
+                if (!empty($_POST['fin_dia2']) && !empty($_POST['fin_mes2']) && !empty($_POST['fin_ano2'])) {
+                    $fecha_fin2 = $_POST['fin_ano2'] . '-' . $_POST['fin_mes2'] . '-' . str_pad($_POST['fin_dia2'], 2, '0', STR_PAD_LEFT);
+                }
+                $sql_p2 = "INSERT INTO compatibilidad_puestos (ID_Compatibilidad, Institucion_Num, Puesto, Codigo_Presupuestal, Unidad_Adscripcion, Tipo_Nombramiento, Fecha_Alta, Fecha_Fin, Remuneracion, Ubicacion) VALUES (?, 2, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $stmt_p2 = $conn->prepare($sql_p2);
+                $p2_puesto  = $_POST['puesto_nuevo'] ?? '';
+                $p2_codigo  = $_POST['codigo_presupuestal2'] ?? '';
+                $p2_unidad  = $_POST['unidad_adscripcion2'] ?? '';
+                $p2_tipo    = $_POST['tipo_nombramiento2'] ?? '';
+                $p2_rem     = $_POST['remuneracion2'] ?? 0;
+                $p2_ubic    = $_POST['ubicacion2'] ?? '';
+                $stmt_p2->bind_param("issssssdss", $id_compatibilidad, $p2_puesto, $p2_codigo, $p2_unidad, $p2_tipo, $fecha_alta2, $fecha_fin2, $p2_rem, $p2_ubic);
+                $stmt_p2->execute();
+                $stmt_p2->close();
+
                 $submitted = true;
-                $mensaje_exito = "Solicitud registrada exitosamente con ID: " . $conn->insert_id;
+                $mensaje_exito = "Solicitud registrada exitosamente con ID: " . $id_compatibilidad;
             } else {
                 $errors[] = "Error al guardar: " . $stmt->error;
             }
@@ -896,6 +917,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="number" name="fin_ano2" min="1990" max="2099" value="<?= htmlspecialchars($_POST['fin_ano2'] ?? '') ?>" style="font-family:var(--font-mono);">
                 </div>
             </div>
+            <!-- CAMBIO 1: agregados campos Partida/Clave Presupuestal y Clave Larga igual que inst1 -->
+        <div class="field-row col-2">
+            <div class="field">
+                <label>Partida y Clave Presupuestal</label>
+                <input type="text" name="clave_presupuestal2" id="clave_presupuestal2" value="<?= htmlspecialchars($_POST['clave_presupuestal2'] ?? '') ?>" style="font-family:var(--font-mono);">
+            </div>
+            <div class="field">
+                <label>Clave Larga</label>
+                <input type="text" name="clave_larga2" id="clave_larga2" value="<?= htmlspecialchars($_POST['clave_larga2'] ?? '') ?>" style="font-family:var(--font-mono); font-size:12px;">
+            </div>
+        </div>
             <div class="field-row col-1">
                 <div class="field">
                     <label>Ubicación del centro de trabajo, horario y tiempo de traslado</label>
