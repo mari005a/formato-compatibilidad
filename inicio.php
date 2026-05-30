@@ -1365,21 +1365,24 @@ function actualizarDatosImpresion() {
     const get = (sel) => document.querySelector(sel)?.value || '';
     const getSelect = (sel) => { const s = document.querySelector(sel); return s?.options[s.selectedIndex]?.text || ''; };
 
+    // CAMBIO 2: función auxiliar — si el campo está vacío muestra "campo vacío"
+    const val = (selector) => get(selector).trim() || 'campo vacío';
+
     // Institución 1
-    document.getElementById('print_puesto_inst1').innerText = get('input[name="puesto_actual"]');
-    document.getElementById('print_codigo_inst1').innerText = get('input[name="codigo_presupuestal1"]');
-    document.getElementById('print_unidad_inst1').innerText = get('input[name="unidad_adscripcion1"]');
+    document.getElementById('print_puesto_inst1').innerText = val('input[name="puesto_actual"]'); // CAMBIO 2
+    document.getElementById('print_codigo_inst1').innerText = val('input[name="codigo_presupuestal1"]'); // CAMBIO 2
+    document.getElementById('print_unidad_inst1').innerText = val('input[name="unidad_adscripcion1"]'); // CAMBIO 2
     document.getElementById('print_fecha_inst1').innerText = get('input[name="alta_dia1"]') + '/' + getSelect('select[name="alta_mes1"]') + '/' + get('input[name="alta_ano1"]');
     document.getElementById('print_tipo_inst1').innerText = getSelect('select[name="tipo_nombramiento1"]');
     document.getElementById('print_rem_inst1').innerText = '$' + parseFloat(get('input[name="remuneracion1"]') || 0).toLocaleString('en-US');
-    document.getElementById('print_ubicacion_inst1').innerText = get('textarea[name="ubicacion1"]');
+    document.getElementById('print_ubicacion_inst1').innerText = val('textarea[name="ubicacion1"]'); // CAMBIO 2
 
     // Institución 2
-    document.getElementById('print_puesto_inst2').innerText = get('input[name="puesto_nuevo"]');
-    document.getElementById('print_codigo_inst2').innerText = get('input[name="codigo_presupuestal2"]');
-    document.getElementById('print_unidad_inst2').innerText = get('input[name="unidad_adscripcion2"]');
+    document.getElementById('print_puesto_inst2').innerText = val('input[name="puesto_nuevo"]'); // CAMBIO 2
+    document.getElementById('print_codigo_inst2').innerText = val('input[name="codigo_presupuestal2"]'); // CAMBIO 2
+    document.getElementById('print_unidad_inst2').innerText = val('input[name="unidad_adscripcion2"]'); // CAMBIO 2
     document.getElementById('print_rem_inst2').innerText = '$' + parseFloat(get('input[name="remuneracion2"]') || 0).toLocaleString('en-US');
-    document.getElementById('print_ubicacion_inst2').innerText = get('textarea[name="ubicacion2"]');
+    document.getElementById('print_ubicacion_inst2').innerText = val('textarea[name="ubicacion2"]'); // CAMBIO 2
 
     // Lugar y fecha
     const lugar = get('input[name="lugar"]');
