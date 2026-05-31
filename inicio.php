@@ -834,6 +834,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="nota-legal" style="margin-top:12px;">
                 (*) Los contratos de honorarios NO sujetos al artículo 131 del RLFPRH, únicamente deberán establecer las fechas de inicio y término del contrato, así como la(s) fecha(s) de entrega(s) parciales y/o totales de los productos o servicios correspondientes.
             </div>
+            <!-- CAMBIO: botón agregar puesto — mismo estilo que los demás campos -->
+            <div style="margin-top:12px;">
+                <button type="button" onclick="abrirModalPuesto(1)" style="
+                width:100%;
+                padding: 10px;
+                background: var(--surface-alt);
+                border: 1px dashed var(--border-strong);
+                border-radius: 3px;
+                color: var(--accent);
+                font-family: var(--font-main);
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                transition: all 0.2s;
+                " onmouseover="this.style.background='var(--accent-light)'" 
+                onmouseout="this.style.background='var(--surface-alt)'">
+                + Agregar puesto actual
+                </button>
+            </div>
         </div>
     </div>
 
@@ -936,6 +957,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="nota-legal" style="margin-top:12px;">
                 (*) Los contratos de honorarios NO sujetos al artículo 131 del RLFPRH, únicamente deberán establecer las fechas de inicio y término del contrato, así como la(s) fecha(s) de entrega(s) parciales y/o totales de los productos o servicios correspondientes.
+            </div>
+            <!-- CAMBIO: botón agregar puesto — mismo estilo que los demás campos -->
+            <div style="margin-top:12px;">
+                <button type="button" onclick="abrirModalPuesto(1)" style="
+                    width:100%;
+                    padding: 10px;
+                    background: var(--surface-alt);
+                    border: 1px dashed var(--border-strong);
+                    border-radius: 3px;
+                    color: var(--accent);
+                    font-family: var(--font-main);
+                    font-size: 13px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    letter-spacing: 0.04em;
+                    text-transform: uppercase;
+                    transition: all 0.2s;
+                  " onmouseover="this.style.background='var(--accent-light)'" 
+                    onmouseout="this.style.background='var(--surface-alt)'">
+                    + Agregar puesto actual
+                </button>
             </div>
         </div>
     </div>
@@ -1218,9 +1260,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <td><?= htmlspecialchars($plaza['CD_Trabajo']) ?></td>
                     <td class="num" style="font-weight:700; color:var(--success);">$<?= number_format($plaza['Salario'], 2) ?></td>
                     <td>
-                        <button type="button" style="padding:4px 10px; font-size:11px; background:var(--accent); color:white; border:none; border-radius:2px; cursor:pointer;"
-                            onclick="usarPlaza('<?= htmlspecialchars($plaza['Des_Categoria'], ENT_QUOTES) ?>', '<?= htmlspecialchars($plaza['Categoria'], ENT_QUOTES) ?>', '<?= htmlspecialchars($plaza['Clave_Presupuestal'], ENT_QUOTES) ?>', <?= $plaza['Salario'] ?>)">
-                            Usar →
+                        <!-- CAMBIO: dos botones para elegir institución -->
+                        <button type="button" style="padding:4px 8px; font-size:10px; background:var(--accent); color:white; border:none; border-radius:2px; cursor:pointer; margin-bottom:2px; display:block; width:100%;"
+                        onclick="usarPlaza('<?= htmlspecialchars($plaza['Des_Categoria'], ENT_QUOTES) ?>', '<?= htmlspecialchars($plaza['Categoria'], ENT_QUOTES) ?>', '<?= htmlspecialchars($plaza['Clave_Presupuestal'], ENT_QUOTES) ?>', <?= $plaza['Salario'] ?>, 1)">
+                        Inst. 1 →
+                        </button>
+                        <button type="button" style="padding:4px 8px; font-size:10px; background:var(--accent2); color:white; border:none; border-radius:2px; cursor:pointer; display:block; width:100%;"
+                        onclick="usarPlaza('<?= htmlspecialchars($plaza['Des_Categoria'], ENT_QUOTES) ?>', '<?= htmlspecialchars($plaza['Categoria'], ENT_QUOTES) ?>', '<?= htmlspecialchars($plaza['Clave_Presupuestal'], ENT_QUOTES) ?>', <?= $plaza['Salario'] ?>, 2)">
+                        Inst. 2 →
                         </button>
                     </td>
                 </tr>
@@ -1373,18 +1420,33 @@ function updateCount() {
     document.getElementById('plazas-count').textContent = rows.length + ' plazas encontradas';
 }
 
-function usarPlaza(puesto, cat, clave, rem) {
-    document.querySelector('input[name="puesto_nuevo"]').value = puesto;
-    document.querySelector('input[name="codigo_presupuestal2"]').value = cat;
-    document.querySelector('input[name="clave_presupuestal1"]').value = clave;
-    document.querySelector('input[name="remuneracion2"]').value = rem;
-    document.getElementById('print_puesto_inst2').innerText = puesto;
-    document.getElementById('print_codigo_inst2').innerText = cat;
-    document.getElementById('print_rem_inst2').innerText = '$' + parseFloat(rem).toLocaleString('en-US');
+// CAMBIO: inst tiene valor por defecto 2 para no romper llamadas antiguas sin ese parámetro
+function usarPlaza(puesto, cat, clave, rem, inst = 2) {
+    if (inst === 1) {
+        document.querySelector('input[name="puesto_actual"]').value = puesto;
+        document.querySelector('input[name="codigo_presupuestal1"]').value = cat;
+        document.querySelector('input[name="remuneracion1"]').value = rem;
+        document.querySelector('input[name="clave_presupuestal1"]').value = clave;
+        document.querySelector('input[name="clave_larga1"]').value = clave;
+        document.getElementById('print_puesto_inst1').innerText = puesto;
+        document.getElementById('print_codigo_inst1').innerText = cat;
+        document.getElementById('print_rem_inst1').innerText = '$' + parseFloat(rem).toLocaleString('en-US');
+    } else {
+        document.querySelector('input[name="puesto_nuevo"]').value = puesto;
+        document.querySelector('input[name="codigo_presupuestal2"]').value = cat;
+        document.querySelector('input[name="remuneracion2"]').value = rem;
+        document.getElementById('clave_presupuestal2').value = clave;
+        document.getElementById('clave_larga2').value = clave;
+        document.getElementById('print_puesto_inst2').innerText = puesto;
+        document.getElementById('print_codigo_inst2').innerText = cat;
+        document.getElementById('print_rem_inst2').innerText = '$' + parseFloat(rem).toLocaleString('en-US');
+    }
     showTab('formato', document.querySelector('.nav-tab'));
     document.querySelector('.nav-tab').classList.add('active');
     setTimeout(() => {
-        const el = document.querySelector('input[name="puesto_nuevo"]');
+        const el = inst === 1
+            ? document.querySelector('input[name="puesto_actual"]')
+            : document.querySelector('input[name="puesto_nuevo"]');
         el.scrollIntoView({behavior:'smooth', block:'center'});
         el.focus();
         el.style.transition = 'background 0.5s';
